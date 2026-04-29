@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
+import { RunLogLogo } from "@/components/RunLogLogo";
 
 const nav = [
   { href: "/dashboard", label: "대시보드" },
@@ -37,9 +38,13 @@ export function AppChrome({
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link
             href="/dashboard"
-            className="text-h2 font-bold text-accent"
+            className="flex items-center gap-2 text-h2 font-bold text-accent"
+            aria-label="RunLog 홈"
           >
-            RunLog
+            <span className="flex shrink-0" aria-hidden>
+              <RunLogLogo size={30} className="rounded-lg" />
+            </span>
+            <span>RunLog</span>
           </Link>
           <nav className="flex items-center gap-6">
             {nav.map(({ href, label }) => (

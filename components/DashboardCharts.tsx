@@ -44,6 +44,7 @@ export function DashboardCharts({
           />
           {hasChartData ? (
             <Tooltip
+              cursor={false}
               contentStyle={{
                 background: "var(--color-surface)",
                 border: "1px solid var(--color-border)",
@@ -60,7 +61,7 @@ export function DashboardCharts({
             fill="var(--color-chart-primary)"
             radius={[6, 6, 0, 0]}
             name="거리"
-            activeBar={hasChartData}
+            activeBar={false}
           />
         </BarChart>
       </ResponsiveContainer>

@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { RunLogLogo } from "@/components/RunLogLogo";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 export function Landing({
@@ -35,14 +36,21 @@ export function Landing({
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <div className="mx-auto max-w-md text-center">
-        <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-accent">
-          RunLog
-        </p>
+        <div className="mb-6 flex flex-col items-center gap-3">
+          <span aria-hidden className="flex">
+            <RunLogLogo size={56} priority className="rounded-xl" />
+          </span>
+          <p className="text-caption font-semibold uppercase tracking-wide text-accent">
+            RunLog
+          </p>
+        </div>
         <h1 className="mb-4 text-display font-bold leading-tight text-foreground">
           오늘 러닝, 가볍게 기록
         </h1>
-        <p className="mb-10 text-muted">
-          거리·시간·메모와 주간 차트를 한곳에서. Google 계정으로 시작하세요.
+        <p className="mb-10 text-muted leading-relaxed">
+          거리·시간·메모와 주간 차트를 한곳에서.
+          <br />
+          Google 계정으로 시작하세요.
         </p>
 
         {!googleOAuthReady ? (
