@@ -4,6 +4,8 @@ Next.js 14 · Tailwind · Prisma · PostgreSQL(Supabase) · NextAuth(Google) · 
 
 기획·디자인 문서는 `docs/` 를 참고하세요.
 
+GitHub 저장소 만들기·푸시·Vercel 연결은 [docs/GitHub-연동.md](./docs/GitHub-연동.md) 를 따르세요.
+
 ## 사전 준비
 
 - Node.js 20 LTS 권장
