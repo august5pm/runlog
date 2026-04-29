@@ -24,6 +24,8 @@ GitHub 저장소 만들기·푸시·Vercel 연결은 [docs/GitHub-연동.md](./d
 
 Google OAuth 승인된 리디렉션 URI에 `http://localhost:3000/api/auth/callback/google` 와 프로덕션 URL을 등록합니다.
 
+**날씨(대시보드):** [공공데이터포털](https://www.data.go.kr/) 기상청 단기예보 API용 `DATA_GO_KR_SERVICE_KEY` 가 필요합니다. 서비스 미신청·키 미설정 시 대시보드에 안내 문구만 표시됩니다. 위치·링크 등은 `.env.example` 의 `WEATHER_*`, `NAVER_WEATHER_URL` 주석을 참고하세요.
+
 ## 데이터베이스
 
 ```bash

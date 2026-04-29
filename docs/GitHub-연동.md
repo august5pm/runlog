@@ -26,7 +26,7 @@ git push -u origin main
 
 1. [Vercel](https://vercel.com) → **Add New Project**
 2. **Import Git Repository** → GitHub 계정 연결 후 방금 만든 저장소 선택
-3. Framework는 Next.js 자동 인식, **Environment Variables**에 `.env.example` 참고해 등록
+3. Framework는 Next.js 자동 인식, **Environment Variables**에 `.env.example` 참고해 등록(DB·OAuth·날씨 키 등)
 4. **Deploy**
 
 이후 `main`에 푸시할 때마다 Vercel이 자동 배포(기본 설정 기준)됩니다.

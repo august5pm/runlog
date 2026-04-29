@@ -10,6 +10,8 @@ import {
   formatHeartCadenceLine,
   formatPaceMinPerKm,
 } from "@/lib/format";
+import { DashboardWeather } from "@/components/DashboardWeather";
+import { getWeatherSnapshot } from "@/lib/kma-weather";
 import { prisma } from "@/lib/prisma";
 import { monthRange, weekRange } from "@/lib/week";
 
@@ -32,7 +34,7 @@ export default async function DashboardPage({
   const anchor = new Date();
   const { start, end } = isMonth ? monthRange(anchor) : weekRange(anchor);
 
-  const [periodRuns, recentRuns, periodTotals] = await Promise.all([
+  const [periodRuns, recentRuns, periodTotals, weather] = await Promise.all([
     prisma.run.findMany({
       where: { userId, date: { gte: start, lt: end } },
       orderBy: { date: "asc" },
@@ -47,6 +49,7 @@ export default async function DashboardPage({
       _sum: { distanceKm: true, durationSec: true },
       _count: true,
     }),
+    getWeatherSnapshot(),
   ]);
 
   const chartData = isMonth
@@ -65,11 +68,16 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-h1 font-bold text-foreground">대시보드</h1>
-        <p className="mt-1 text-muted">
-          안녕하세요, {session?.user?.name ?? session?.user?.email ?? "러너"}님
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-h1 font-bold text-foreground">대시보드</h1>
+          <p className="mt-1 text-muted">
+            안녕하세요, {session?.user?.name ?? session?.user?.email ?? "러너"}님
+          </p>
+        </div>
+        <div className="shrink-0 sm:max-w-[min(100%,16rem)] sm:pt-0.5">
+          <DashboardWeather data={weather} />
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
