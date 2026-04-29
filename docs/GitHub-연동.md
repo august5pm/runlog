@@ -13,7 +13,7 @@
 프로젝트 루트에서( PowerShell 예시):
 
 ```powershell
-cd d:\applenamu\study\2026\260429_cursor
+cd d:\study\2026\260429_cursor
 git branch -M main
 git remote add origin https://github.com/본인계정/저장소이름.git
 git push -u origin main
