@@ -12,12 +12,28 @@ export type WeatherIconKind =
   | "snow"
   | "drizzle";
 
+/** PTY/SKY 종류별 표시 이모지 */
+export const WEATHER_KIND_EMOJI: Record<WeatherIconKind, string> = {
+  clear: "☀️",
+  partlyCloudy: "⛅",
+  cloudy: "☁️",
+  rain: "🌧️",
+  drizzle: "🌦️",
+  sleet: "🌨️",
+  snow: "❄️",
+};
+
+export function weatherKindEmoji(kind: WeatherIconKind): string {
+  return WEATHER_KIND_EMOJI[kind];
+}
+
 /** PTY·SKY → UI 아이콘 종류 (강수가 있으면 SKY보다 PTY 우선) */
 export function resolveWeatherIconKind(
   pty: string,
   sky: string | null,
 ): WeatherIconKind {
-  switch (pty) {
+  const p = pty.trim();
+  switch (p) {
     case "1":
     case "4":
       return "rain";
@@ -34,9 +50,13 @@ export function resolveWeatherIconKind(
       break;
   }
 
-  switch (sky) {
+  const s = sky?.trim() ?? "";
+  switch (s) {
     case "1":
       return "clear";
+    case "2":
+      /** 일부 응답·문서에서 맑음↔구름많음 사이 코드로 쓰이는 경우 */
+      return "partlyCloudy";
     case "3":
       return "partlyCloudy";
     case "4":

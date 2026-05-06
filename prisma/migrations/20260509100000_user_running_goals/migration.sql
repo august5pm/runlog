@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "weeklyDistanceGoalKm" DECIMAL(8, 2);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "monthlyDistanceGoalKm" DECIMAL(8, 2);

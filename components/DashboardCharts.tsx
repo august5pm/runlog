@@ -10,23 +10,34 @@ import {
   YAxis,
 } from "recharts";
 
+export type DashboardChartVariant = "week" | "month" | "year" | "all";
+
 export function DashboardCharts({
   data,
   variant = "week",
 }: {
   data: { label: string; km: number }[];
-  variant?: "week" | "month";
+  variant?: DashboardChartVariant;
 }) {
-  const isMonth = variant === "month";
+  const isWeek = variant === "week";
   const hasChartData = data.length > 0 && data.some((d) => d.km > 0);
-  const bottom = isMonth ? 28 : 4;
-  const xTick = isMonth
-    ? { fontSize: 10, fill: "var(--color-text-muted)", angle: -40, textAnchor: "end" as const }
-    : { fontSize: 12, fill: "var(--color-text-muted)" };
+  const tilted =
+    variant === "month" || variant === "year" || variant === "all";
+  const denseTicks = variant === "all" && data.length > 14;
+  const bottom = isWeek ? 4 : denseTicks ? 36 : 28;
+  const xTick = isWeek
+    ? { fontSize: 12, fill: "var(--color-text-muted)" }
+    : {
+        fontSize: denseTicks ? 9 : 10,
+        fill: "var(--color-text-muted)",
+        angle: -40,
+        textAnchor: "end" as const,
+      };
+  const xInterval = denseTicks ? Math.max(1, Math.floor(data.length / 10)) : 0;
 
   return (
     <div
-      className={`w-full rounded-card border border-border bg-surface p-2 shadow-card ${isMonth ? "h-[300px]" : "h-[260px]"}`}
+      className={`w-full rounded-card border border-border bg-surface p-2 shadow-card ${isWeek ? "h-[260px]" : "h-[300px]"}`}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom }}>
@@ -34,8 +45,8 @@ export function DashboardCharts({
           <XAxis
             dataKey="label"
             tick={xTick}
-            interval={0}
-            height={isMonth ? 40 : 24}
+            interval={xInterval}
+            height={isWeek ? 24 : tilted ? 44 : 24}
           />
           <YAxis
             width={40}
@@ -50,9 +61,11 @@ export function DashboardCharts({
                 border: "1px solid var(--color-border)",
                 borderRadius: "8px",
               }}
-              labelFormatter={(label) =>
-                isMonth ? `${label}일` : `${label}요일`
-              }
+              labelFormatter={(label) => {
+                if (variant === "week") return `${label}요일`;
+                if (variant === "month") return `${label}일`;
+                return String(label);
+              }}
               formatter={(value: number) => [`${value} km`, "거리"]}
             />
           ) : null}

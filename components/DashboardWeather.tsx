@@ -15,7 +15,7 @@ export function DashboardWeather({ data }: { data: WeatherSnapshot }) {
           <WeatherIcon
             kind={data.iconKind}
             title={weatherIconKindLabel(data.iconKind)}
-            className="h-10 w-10 shrink-0 text-accent"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center text-3xl leading-none select-none"
           />
           <div className="min-w-0 text-left">
             <p className="font-numeric text-2xl font-bold tabular-nums leading-none text-foreground">

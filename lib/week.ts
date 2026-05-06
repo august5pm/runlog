@@ -20,3 +20,12 @@ export function monthRange(anchor: Date): { start: Date; end: Date } {
   const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
   return { start, end };
 }
+
+/** 해당 연도 1월 1일 00:00 ~ 다음 해 1월 1일 00:00 (로컬) 구간 [start, end). */
+export function yearRange(anchor: Date): { start: Date; end: Date } {
+  const d = new Date(anchor);
+  d.setHours(0, 0, 0, 0);
+  const start = new Date(d.getFullYear(), 0, 1);
+  const end = new Date(d.getFullYear() + 1, 0, 1);
+  return { start, end };
+}

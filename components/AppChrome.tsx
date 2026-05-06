@@ -4,23 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
 import { RunLogLogo } from "@/components/RunLogLogo";
+import {
+  DEFAULT_DISPLAY_NAME,
+  resolveDisplayName,
+  resolveProfileEmoji,
+} from "@/lib/user-display";
 
 const nav = [
   { href: "/dashboard", label: "대시보드" },
+  { href: "/ranking", label: "랭킹" },
+  { href: "/community", label: "커뮤니티" },
   { href: "/runs", label: "기록" },
   { href: "/settings", label: "설정" },
 ] as const;
 
-function userInitial(session: Session): string {
-  const name = session.user?.name?.trim();
-  if (name) return name.slice(0, 1).toUpperCase();
-  const email = session.user?.email;
-  if (email) return email.slice(0, 1).toUpperCase();
-  return "?";
+function userLabel(session: Session): string {
+  if (!session.user) return DEFAULT_DISPLAY_NAME;
+  return resolveDisplayName(session.user);
 }
 
-function userLabel(session: Session): string {
-  return session.user?.name?.trim() || session.user?.email || "사용자";
+function userAvatarEmoji(session: Session): string {
+  return resolveProfileEmoji(session.user?.profileEmoji);
 }
 
 export function AppChrome({
@@ -66,10 +70,10 @@ export function AppChrome({
             >
               <span className="inline-flex max-w-[220px] items-center gap-2 rounded-full border border-border bg-bg px-2.5 py-1 pr-3 shadow-card">
                 <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-muted text-caption font-bold text-accent"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-muted text-[1.1rem] leading-none"
                   aria-hidden
                 >
-                  {userInitial(session)}
+                  {userAvatarEmoji(session)}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[10px] font-medium uppercase tracking-wide text-subtle">

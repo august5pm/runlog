@@ -103,3 +103,61 @@ export function buildMonthChartData(
   }
   return out;
 }
+
+/** 해당 연도 1~12월 월별 거리 합산 (runs는 해당 연도로 필터된 것을 넣음) */
+export function buildYearChartData(
+  yearStart: Date,
+  runs: { date: Date; distanceKm: unknown }[],
+): { label: string; km: number }[] {
+  const y = yearStart.getFullYear();
+  const byMonth = new Map<number, number>();
+  for (const r of runs) {
+    const d = new Date(r.date);
+    if (d.getFullYear() !== y) continue;
+    const m = d.getMonth();
+    const km = Number(r.distanceKm);
+    byMonth.set(m, (byMonth.get(m) ?? 0) + km);
+  }
+
+  const out: { label: string; km: number }[] = [];
+  for (let month = 0; month < 12; month++) {
+    const label = new Intl.DateTimeFormat("ko-KR", { month: "short" }).format(
+      new Date(y, month, 1),
+    );
+    out.push({
+      label,
+      km: Math.round((byMonth.get(month) ?? 0) * 100) / 100,
+    });
+  }
+  return out;
+}
+
+/** 전체 기간: 기록이 있는 월 단위로 합산 (시간순) */
+export function buildAllTimeChartData(
+  runs: { date: Date; distanceKm: unknown }[],
+): { label: string; km: number }[] {
+  if (runs.length === 0) return [];
+
+  const byMonthKey = new Map<string, number>();
+  for (const r of runs) {
+    const d = new Date(r.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const km = Number(r.distanceKm);
+    byMonthKey.set(key, (byMonthKey.get(key) ?? 0) + km);
+  }
+
+  const keys = Array.from(byMonthKey.keys()).sort();
+  const fmt = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+  });
+
+  return keys.map((key) => {
+    const [ys, ms] = key.split("-").map(Number);
+    const label = fmt.format(new Date(ys, ms - 1, 1));
+    return {
+      label,
+      km: Math.round((byMonthKey.get(key) ?? 0) * 100) / 100,
+    };
+  });
+}

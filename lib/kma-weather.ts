@@ -218,31 +218,48 @@ function parseItems(json: KmaJson): Map<string, string> {
   const map = new Map<string, string>();
   for (const it of items) {
     if (it && typeof it === "object" && "category" in it && "obsrValue" in it) {
-      const o = it as { category: string; obsrValue: string };
-      map.set(o.category, o.obsrValue);
+      const o = it as { category: string; obsrValue: string | number };
+      map.set(String(o.category), String(o.obsrValue).trim());
     }
   }
   return map;
 }
 
-/** 초단기예보: 같은 발표 시각에서 가장 늦은 fcstTime의 SKY(맑음/구름/흐림) */
-function pickSkyFromFcst(json: KmaJson): string | null {
+/** KST 기준 YYYYMMDDHHmm — 초단기예보 SKY fcstDate+fcstTime과 비교 */
+function kstNowSortKey(now: Date): string {
+  const p = getKstParts(now);
+  return `${p.year}${pad2(p.month)}${pad2(p.day)}${pad2(p.hour)}${pad2(p.minute)}`;
+}
+
+/**
+ * 초단기예보 SKY: 현재 시각(KST) 이하 중 **가장 늦은** 예보 시각을 사용.
+ * - “가장 이른 슬롯만” 쓰면 이미 지난 이른아침 슬롯이 잡혀 낮 시간에도 아이콘이 어긋남.
+ * - 모두 미래만 있으면(자정 직후 등) 가장 가까운 **첫** 슬롯 사용.
+ */
+function pickSkyFromFcst(json: KmaJson, now = new Date()): string | null {
   const raw = json.response?.body?.items?.item;
   const items = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const skyRows: { sortKey: string; value: string }[] = [];
   for (const it of items) {
     if (!it || typeof it !== "object") continue;
     const o = it as Record<string, unknown>;
-    if (o.category !== "SKY") continue;
-    const fd = String(o.fcstDate ?? "");
-    const ft = String(o.fcstTime ?? "");
-    const fcstValue = String(o.fcstValue ?? "");
-    if (!fd || !ft) continue;
+    if (String(o.category) !== "SKY") continue;
+    const fdRaw = String(o.fcstDate ?? "").replace(/\D/g, "");
+    const ftRaw = String(o.fcstTime ?? "").replace(/\D/g, "");
+    const fcstValue = String(o.fcstValue ?? "").trim();
+    if (!fdRaw || !ftRaw || !fcstValue) continue;
+    const fd = fdRaw.length >= 8 ? fdRaw.slice(-8) : fdRaw.padStart(8, "0");
+    const ft = ftRaw.length >= 4 ? ftRaw.slice(-4) : ftRaw.padStart(4, "0");
     skyRows.push({ sortKey: `${fd}${ft}`, value: fcstValue });
   }
   if (skyRows.length === 0) return null;
   skyRows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  return skyRows[skyRows.length - 1]?.value ?? null;
+  const nowKey = kstNowSortKey(now);
+  const atOrBefore = skyRows.filter((r) => r.sortKey <= nowKey);
+  if (atOrBefore.length > 0) {
+    return atOrBefore[atOrBefore.length - 1]?.value ?? null;
+  }
+  return skyRows[0]?.value ?? null;
 }
 
 type KmaResult =
@@ -328,7 +345,7 @@ export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
   /** SKY 등 예보 항목을 충분히 받기 위해 행 수 확대 */
   const fcstParams = new URLSearchParams({
     pageNo: "1",
-    numOfRows: "60",
+    numOfRows: "100",
     dataType: "JSON",
     base_date: baseDate,
     base_time: baseTime,
@@ -367,12 +384,12 @@ export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
   const tempC = parseFloat(t1h);
   const reh = map.get("REH");
   const humidity = reh != null ? parseInt(reh, 10) : null;
-  const pty = map.get("PTY") ?? "0";
+  const pty = (map.get("PTY") ?? "0").trim();
   const precipLabel = ptyLabel(pty);
 
   const sky =
-    fcstResult.ok ? pickSkyFromFcst(fcstResult.json) : null;
-  const iconKind = resolveWeatherIconKind(pty, sky);
+    fcstResult.ok ? pickSkyFromFcst(fcstResult.json, new Date()) : null;
+  const iconKind = resolveWeatherIconKind(pty, sky?.trim() ?? null);
 
   return {
     ok: true,

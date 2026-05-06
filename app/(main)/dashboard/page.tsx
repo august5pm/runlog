@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { DashboardCharts } from "@/components/DashboardCharts";
 import {
+  DashboardCharts,
+  type DashboardChartVariant,
+} from "@/components/DashboardCharts";
+import {
+  buildAllTimeChartData,
   buildMonthChartData,
   buildWeekChartData,
+  buildYearChartData,
   formatDateLabel,
   formatDuration,
   formatHeartCadenceLine,
@@ -13,7 +18,10 @@ import {
 import { DashboardWeather } from "@/components/DashboardWeather";
 import { getWeatherSnapshot } from "@/lib/kma-weather";
 import { prisma } from "@/lib/prisma";
-import { monthRange, weekRange } from "@/lib/week";
+import { parseRunPeriod, runDateFilterForPeriod } from "@/lib/run-period";
+import { getRunningStreakDays } from "@/lib/run-streak";
+import { resolveDisplayName } from "@/lib/user-display";
+import { monthRange, weekRange, yearRange } from "@/lib/week";
 
 function pickParam(
   value: string | string[] | undefined,
@@ -30,13 +38,29 @@ export default async function DashboardPage({
 }) {
   const session = await getServerSession(authOptions);
   const userId = session!.user!.id;
-  const isMonth = pickParam(searchParams.range) === "month";
+  const range = parseRunPeriod(pickParam(searchParams.range));
   const anchor = new Date();
-  const { start, end } = isMonth ? monthRange(anchor) : weekRange(anchor);
+  const dateFilter = runDateFilterForPeriod(range, anchor);
+  const runWhere = {
+    userId,
+    ...(dateFilter ? { date: dateFilter } : {}),
+  };
 
-  const [periodRuns, recentRuns, periodTotals, weather] = await Promise.all([
+  const wr = weekRange(anchor);
+  const mr = monthRange(anchor);
+
+  const [
+    periodRuns,
+    recentRuns,
+    periodTotals,
+    weather,
+    goalsUser,
+    streakDays,
+    weekGoalAgg,
+    monthGoalAgg,
+  ] = await Promise.all([
     prisma.run.findMany({
-      where: { userId, date: { gte: start, lt: end } },
+      where: runWhere,
       orderBy: { date: "asc" },
     }),
     prisma.run.findMany({
@@ -45,26 +69,106 @@ export default async function DashboardPage({
       take: 5,
     }),
     prisma.run.aggregate({
-      where: { userId, date: { gte: start, lt: end } },
+      where: runWhere,
       _sum: { distanceKm: true, durationSec: true },
       _count: true,
     }),
     getWeatherSnapshot(),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        weeklyDistanceGoalKm: true,
+        monthlyDistanceGoalKm: true,
+      },
+    }),
+    getRunningStreakDays(userId),
+    prisma.run.aggregate({
+      where: { userId, date: { gte: wr.start, lt: wr.end } },
+      _sum: { distanceKm: true },
+    }),
+    prisma.run.aggregate({
+      where: { userId, date: { gte: mr.start, lt: mr.end } },
+      _sum: { distanceKm: true },
+    }),
   ]);
 
-  const chartData = isMonth
-    ? buildMonthChartData(start, periodRuns)
-    : buildWeekChartData(start, periodRuns);
+  const weekGoalKm =
+    goalsUser?.weeklyDistanceGoalKm != null
+      ? Number(goalsUser.weeklyDistanceGoalKm)
+      : null;
+  const monthGoalKm =
+    goalsUser?.monthlyDistanceGoalKm != null
+      ? Number(goalsUser.monthlyDistanceGoalKm)
+      : null;
+  const weekDoneKm = Number(weekGoalAgg._sum.distanceKm ?? 0);
+  const monthDoneKm = Number(monthGoalAgg._sum.distanceKm ?? 0);
+
+  function goalPercent(done: number, goal: number | null): number | null {
+    if (goal == null || goal <= 0) return null;
+    return Math.min(100, Math.round((done / goal) * 1000) / 10);
+  }
+
+  const weekGoalPct = goalPercent(weekDoneKm, weekGoalKm);
+  const monthGoalPct = goalPercent(monthDoneKm, monthGoalKm);
+
+  const chartStart =
+    range === "month"
+      ? monthRange(anchor).start
+      : range === "year"
+        ? yearRange(anchor).start
+        : weekRange(anchor).start;
+
+  const chartData =
+    range === "week"
+      ? buildWeekChartData(chartStart, periodRuns)
+      : range === "month"
+        ? buildMonthChartData(chartStart, periodRuns)
+        : range === "year"
+          ? buildYearChartData(chartStart, periodRuns)
+          : buildAllTimeChartData(periodRuns);
+
   const totalKm = Number(periodTotals._sum.distanceKm ?? 0);
   const totalSec = periodTotals._sum.durationSec ?? 0;
   const runCount = periodTotals._count;
 
-  const monthTitle = isMonth
-    ? new Intl.DateTimeFormat("ko-KR", {
-        year: "numeric",
-        month: "long",
-      }).format(start)
-    : null;
+  const monthTitle =
+    range === "month"
+      ? new Intl.DateTimeFormat("ko-KR", {
+          year: "numeric",
+          month: "long",
+        }).format(chartStart)
+      : null;
+
+  const yearNum = chartStart.getFullYear();
+
+  const summaryLabel =
+    range === "week"
+      ? "이번 주"
+      : range === "month"
+        ? "이번 달"
+        : range === "year"
+          ? "올해"
+          : "전체";
+
+  const chartHeading =
+    range === "week"
+      ? "이번 주 거리"
+      : range === "month"
+        ? "이번 달 거리"
+        : range === "year"
+          ? "올해 거리"
+          : "전체 기간 거리";
+
+  const chartCaption =
+    range === "week"
+      ? "요일별 합산"
+      : range === "month" && monthTitle
+        ? `${monthTitle} · 일별 합산`
+        : range === "year"
+          ? `${yearNum}년 · 월별 합산`
+          : range === "all"
+            ? "월별 합산"
+            : "";
 
   return (
     <div className="space-y-8">
@@ -72,7 +176,8 @@ export default async function DashboardPage({
         <div className="min-w-0">
           <h1 className="text-h1 font-bold text-foreground">대시보드</h1>
           <p className="mt-1 text-muted">
-            안녕하세요, {session?.user?.name ?? session?.user?.email ?? "러너"}님
+            안녕하세요,{" "}
+            {session?.user ? resolveDisplayName(session.user) : "러너"}님
           </p>
         </div>
         <div className="shrink-0 sm:max-w-[min(100%,16rem)] sm:pt-0.5">
@@ -82,8 +187,99 @@ export default async function DashboardPage({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
+          <p className="text-caption font-medium text-muted">연속 기록</p>
+          <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
+            {streakDays}
+            <span className="ml-1 text-body font-semibold text-muted">일</span>
+          </p>
+          <p className="mt-2 text-[11px] leading-snug text-subtle">
+            오늘 또는 어제에 기록이 있어야 이어집니다.
+          </p>
+        </div>
+        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
+          <p className="text-caption font-medium text-muted">이번 주 목표</p>
+          {weekGoalKm != null && weekGoalKm > 0 ? (
+            <>
+              <p className="mt-1 font-numeric text-lg font-bold tabular-nums text-foreground">
+                {Math.round(weekDoneKm * 100) / 100}
+                <span className="mx-0.5 font-normal text-muted">/</span>
+                {weekGoalKm}
+                <span className="ml-1 text-body font-normal text-muted">km</span>
+              </p>
+              <div
+                className="mt-2 h-2 w-full overflow-hidden rounded-full bg-border"
+                role="progressbar"
+                aria-valuenow={weekGoalPct ?? 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="이번 주 목표 달성률"
+              >
+                <div
+                  className="h-full min-w-0 rounded-full bg-accent transition-[width]"
+                  style={{ width: `${weekGoalPct ?? 0}%` }}
+                />
+              </div>
+              <p className="mt-1 text-caption text-muted">
+                {weekGoalPct}% 달성
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-caption text-muted">목표 미설정</p>
+              <Link
+                href="/settings"
+                className="mt-2 inline-block text-caption font-semibold text-accent hover:underline"
+              >
+                설정에서 정하기 →
+              </Link>
+            </>
+          )}
+        </div>
+        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
+          <p className="text-caption font-medium text-muted">이번 달 목표</p>
+          {monthGoalKm != null && monthGoalKm > 0 ? (
+            <>
+              <p className="mt-1 font-numeric text-lg font-bold tabular-nums text-foreground">
+                {Math.round(monthDoneKm * 100) / 100}
+                <span className="mx-0.5 font-normal text-muted">/</span>
+                {monthGoalKm}
+                <span className="ml-1 text-body font-normal text-muted">km</span>
+              </p>
+              <div
+                className="mt-2 h-2 w-full overflow-hidden rounded-full bg-border"
+                role="progressbar"
+                aria-valuenow={monthGoalPct ?? 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="이번 달 목표 달성률"
+              >
+                <div
+                  className="h-full min-w-0 rounded-full bg-accent transition-[width]"
+                  style={{ width: `${monthGoalPct ?? 0}%` }}
+                />
+              </div>
+              <p className="mt-1 text-caption text-muted">
+                {monthGoalPct}% 달성
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-caption text-muted">목표 미설정</p>
+              <Link
+                href="/settings"
+                className="mt-2 inline-block text-caption font-semibold text-accent hover:underline"
+              >
+                설정에서 정하기 →
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">
-            {isMonth ? "이번 달 횟수" : "이번 주 횟수"}
+            {summaryLabel} 횟수
           </p>
           <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
             {runCount}
@@ -91,7 +287,7 @@ export default async function DashboardPage({
         </div>
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">
-            {isMonth ? "이번 달 거리" : "이번 주 거리"}
+            {summaryLabel} 거리
           </p>
           <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
             {Math.round(totalKm * 100) / 100}
@@ -100,7 +296,7 @@ export default async function DashboardPage({
         </div>
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">
-            {isMonth ? "이번 달 시간" : "이번 주 시간"}
+            {summaryLabel} 시간
           </p>
           <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
             {totalSec > 0 ? formatDuration(totalSec) : "—"}
@@ -112,39 +308,46 @@ export default async function DashboardPage({
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-h2 font-semibold text-foreground">
-              {isMonth ? "이번 달 거리" : "이번 주 거리"}
+              {chartHeading}
             </h2>
-            {isMonth && monthTitle ? (
-              <p className="mt-1 text-caption text-muted">
-                {monthTitle} · 일별 합산
-              </p>
-            ) : (
-              <p className="mt-1 text-caption text-muted">요일별 합산</p>
-            )}
+            {chartCaption ? (
+              <p className="mt-1 text-caption text-muted">{chartCaption}</p>
+            ) : null}
           </div>
-          <div className="flex shrink-0 gap-1 rounded-button border border-border bg-bg p-1">
-            <Link
-              href="/dashboard"
-              scroll={false}
-              className={`rounded-md px-3 py-2 text-center text-caption font-semibold transition sm:min-w-[5.5rem] ${
-                !isMonth
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted hover:bg-surface hover:text-foreground"
-              }`}
-            >
-              이번 주
-            </Link>
-            <Link
-              href="/dashboard?range=month"
-              scroll={false}
-              className={`rounded-md px-3 py-2 text-center text-caption font-semibold transition sm:min-w-[5.5rem] ${
-                isMonth
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted hover:bg-surface hover:text-foreground"
-              }`}
-            >
-              이번 달
-            </Link>
+          <div className="flex max-w-full shrink-0 flex-wrap gap-1 rounded-button border border-border bg-bg p-1">
+            {(
+              [
+                { href: "/dashboard", value: "week" as const, label: "주" },
+                {
+                  href: "/dashboard?range=month",
+                  value: "month" as const,
+                  label: "월",
+                },
+                {
+                  href: "/dashboard?range=year",
+                  value: "year" as const,
+                  label: "년",
+                },
+                {
+                  href: "/dashboard?range=all",
+                  value: "all" as const,
+                  label: "전체",
+                },
+              ] as const
+            ).map(({ href, value, label }) => (
+              <Link
+                key={value}
+                href={href}
+                scroll={false}
+                className={`rounded-md px-2.5 py-2 text-center text-caption font-semibold transition sm:min-w-[3.25rem] sm:px-3 ${
+                  range === value
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted hover:bg-surface hover:text-foreground"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
         {periodRuns.length === 0 ? (
@@ -152,10 +355,7 @@ export default async function DashboardPage({
             기록을 추가하면 차트가 표시됩니다.
           </p>
         ) : (
-          <DashboardCharts
-            data={chartData}
-            variant={isMonth ? "month" : "week"}
-          />
+          <DashboardCharts data={chartData} variant={range} />
         )}
       </section>
 

@@ -42,9 +42,20 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  accounts      Account[]
-  sessions      Session[]
-  runs          Run[]
+  /// 표시용 닉네임. 비어 있으면 OAuth name → 이메일 @ 앞부분 순으로 표시
+  nickname      String?
+  /// 프로필 이미지 대신 표시할 이모지. 비어 있으면 기본(🏃)
+  profileEmoji  String?
+  /// 이번 주(월~일) 거리 목표(km), 미설정 시 null
+  weeklyDistanceGoalKm  Decimal? @db.Decimal(8, 2)
+  /// 이번 달 거리 목표(km), 미설정 시 null
+  monthlyDistanceGoalKm Decimal? @db.Decimal(8, 2)
+  accounts       Account[]
+  sessions       Session[]
+  runs              Run[]
+  communityPosts    CommunityPost[]
+  communityComments CommunityComment[]
+  communityReactions CommunityPostReaction[]
 }
 
 model VerificationToken {
@@ -69,6 +80,66 @@ model Run {
   notes          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  communityPosts CommunityPost[]
 
   @@index([userId, date(sort: Desc)])
+}
+
+/// 기간형 챌린지(이번 주·이번 달 등). slug로 idempotent 생성
+model Challenge {
+  id        String          @id @default(cuid())
+  slug      String          @unique
+  title     String
+  summary   String?
+  startsAt  DateTime
+  endsAt    DateTime
+  posts     CommunityPost[]
+
+  @@index([endsAt])
+}
+
+/// 커뮤니티 한 줄 후기. 커뮤니티에서는 닉네임만 노출(별도 헬퍼)
+model CommunityPost {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId String?
+  challenge   Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  runId       String?
+  run         Run?       @relation(fields: [runId], references: [id], onDelete: SetNull)
+  content     String     @db.VarChar(280)
+  createdAt   DateTime   @default(now())
+  comments    CommunityComment[]
+  reactions   CommunityPostReaction[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([challengeId])
+  @@index([userId])
+}
+
+/// 글에 달린 댓글 (짧게)
+model CommunityComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String        @db.VarChar(200)
+  createdAt DateTime      @default(now())
+
+  @@index([postId, createdAt])
+  @@index([userId])
+}
+
+/// 글당 사용자 1개 반응 (프리셋 kind)
+model CommunityPostReaction {
+  postId    String
+  userId    String
+  kind      String        @db.VarChar(24)
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([postId])
 }
