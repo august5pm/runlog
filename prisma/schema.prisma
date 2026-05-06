@@ -56,6 +56,19 @@ model User {
   communityPosts    CommunityPost[]
   communityComments CommunityComment[]
   communityReactions CommunityPostReaction[]
+  badges            UserBadge[]
+}
+
+/// 조건 달성 시 1회 저장(획득 시각 보존). 기록 삭제로 회수하지 않음
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String   @db.VarChar(48)
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
 }
 
 model VerificationToken {

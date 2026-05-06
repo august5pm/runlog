@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { syncUserBadges } from "@/lib/badges";
 import { parseOptionalBpm, parseOptionalCadence } from "@/lib/run-fields";
 import { prisma } from "@/lib/prisma";
 
@@ -101,6 +102,8 @@ export async function POST(req: Request) {
       notes: noteStr,
     },
   });
+
+  await syncUserBadges(session.user.id);
 
   return NextResponse.json(run, { status: 201 });
 }

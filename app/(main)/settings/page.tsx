@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ProfileSettingsForm } from "@/components/ProfileSettingsForm";
+import { SettingsBadgesSection } from "@/components/SettingsBadgesSection";
 import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/SignOutButton";
 import {
@@ -60,6 +61,8 @@ export default async function SettingsPage() {
           }
         />
       ) : null}
+
+      {u?.id ? <SettingsBadgesSection userId={u.id} /> : null}
 
       <SignOutButton />
 
