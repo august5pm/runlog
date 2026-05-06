@@ -25,9 +25,30 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    jwt: async ({ token, user }) => {
-      if (user?.id) {
+    jwt: async ({ token, user, trigger, session }) => {
+      if (user) {
         token.sub = user.id;
+        const u = user as {
+          nickname?: string | null;
+          profileEmoji?: string | null;
+          name?: string | null;
+          email?: string | null;
+          image?: string | null;
+        };
+        token.nickname = u.nickname ?? null;
+        token.profileEmoji = u.profileEmoji ?? null;
+        token.name = u.name ?? null;
+        token.email = u.email ?? null;
+        token.picture = u.image ?? null;
+      }
+      if (trigger === "update" && session && typeof session === "object") {
+        const s = session as Record<string, unknown>;
+        if (s.nickname !== undefined) {
+          token.nickname = (s.nickname as string | null) || null;
+        }
+        if (s.profileEmoji !== undefined) {
+          token.profileEmoji = (s.profileEmoji as string | null) || null;
+        }
       }
       return token;
     },
@@ -36,23 +57,11 @@ export const authOptions: NextAuthOptions = {
         return session;
       }
       session.user.id = token.sub;
-      const dbUser = await prisma.user.findUnique({
-        where: { id: token.sub },
-        select: {
-          nickname: true,
-          profileEmoji: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      });
-      if (dbUser) {
-        session.user.nickname = dbUser.nickname;
-        session.user.profileEmoji = dbUser.profileEmoji;
-        session.user.name = dbUser.name;
-        session.user.email = dbUser.email;
-        session.user.image = dbUser.image;
-      }
+      session.user.nickname = token.nickname ?? null;
+      session.user.profileEmoji = token.profileEmoji ?? null;
+      session.user.name = token.name ?? undefined;
+      session.user.email = token.email ?? undefined;
+      session.user.image = token.picture ?? undefined;
       return session;
     },
   },

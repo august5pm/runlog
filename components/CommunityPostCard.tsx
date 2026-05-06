@@ -7,10 +7,7 @@ import {
   isCommunityReactionKind,
 } from "@/lib/community-reactions";
 import { formatDateLabel, formatDuration } from "@/lib/format";
-import {
-  CommunityPostInteractions,
-  type CommunityFeedComment,
-} from "@/components/CommunityPostInteractions";
+import { CommunityPostInteractions } from "@/components/CommunityPostInteractions";
 
 type RunSnippet = {
   id: string;
@@ -26,12 +23,7 @@ type PostForCard = {
   challenge: { id: string; title: string } | null;
   run: RunSnippet;
   user: { nickname: string | null; profileEmoji: string | null };
-  comments: Array<{
-    id: string;
-    content: string;
-    createdAt: Date;
-    user: { nickname: string | null; profileEmoji: string | null };
-  }>;
+  _count: { comments: number };
   reactions: Array<{ userId: string; kind: string }>;
 };
 
@@ -49,14 +41,6 @@ export function CommunityPostCard({
     ? post.reactions.find((r) => r.userId === currentUserId)?.kind ?? null
     : null;
   const myReactionKind = rawMy && isCommunityReactionKind(rawMy) ? rawMy : null;
-
-  const initialComments: CommunityFeedComment[] = post.comments.map((c) => ({
-    id: c.id,
-    content: c.content,
-    createdAt: c.createdAt.toISOString(),
-    authorName: communityDisplayName(c.user.nickname),
-    authorEmoji: communityProfileEmoji(c.user.profileEmoji),
-  }));
 
   return (
     <li className="rounded-card border border-border bg-surface p-4 shadow-card">
@@ -89,7 +73,7 @@ export function CommunityPostCard({
           <CommunityPostInteractions
             postId={post.id}
             currentUserId={currentUserId}
-            initialComments={initialComments}
+            initialCommentCount={post._count.comments}
             initialReactionCounts={reactionCounts}
             initialMyReactionKind={myReactionKind}
           />

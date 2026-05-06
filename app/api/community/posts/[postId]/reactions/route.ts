@@ -1,8 +1,26 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { isCommunityReactionKind } from "@/lib/community-reactions";
+import {
+  aggregateReactionCounts,
+  isCommunityReactionKind,
+} from "@/lib/community-reactions";
 import { prisma } from "@/lib/prisma";
+
+async function reactionPayload(postId: string, userId: string) {
+  const rows = await prisma.communityPostReaction.findMany({
+    where: { postId },
+    select: { kind: true },
+  });
+  const mine = await prisma.communityPostReaction.findUnique({
+    where: { postId_userId: { postId, userId } },
+    select: { kind: true },
+  });
+  return {
+    reactionCounts: aggregateReactionCounts(rows),
+    myReactionKind: mine?.kind && isCommunityReactionKind(mine.kind) ? mine.kind : null,
+  };
+}
 
 /** 같은 종류 다시 누르면 취소, 다른 종류면 교체 */
 export async function POST(
@@ -54,7 +72,12 @@ export async function POST(
     await prisma.communityPostReaction.delete({
       where: { postId_userId: { postId, userId: session.user.id } },
     });
-    return NextResponse.json({ ok: true, state: "removed" as const });
+    const next = await reactionPayload(postId, session.user.id);
+    return NextResponse.json({
+      ok: true,
+      state: "removed" as const,
+      ...next,
+    });
   }
 
   await prisma.communityPostReaction.upsert({
@@ -63,5 +86,10 @@ export async function POST(
     update: { kind },
   });
 
-  return NextResponse.json({ ok: true, state: existing ? ("updated" as const) : ("set" as const) });
+  const next = await reactionPayload(postId, session.user.id);
+  return NextResponse.json({
+    ok: true,
+    state: existing ? ("updated" as const) : ("set" as const),
+    ...next,
+  });
 }

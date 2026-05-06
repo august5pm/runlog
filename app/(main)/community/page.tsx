@@ -76,15 +76,11 @@ export default async function CommunityPage({
       user: {
         select: { nickname: true, profileEmoji: true },
       },
-      comments: {
-        orderBy: { createdAt: "asc" },
-        take: 40,
-        include: {
-          user: { select: { nickname: true, profileEmoji: true } },
-        },
-      },
       reactions: {
         select: { userId: true, kind: true },
+      },
+      _count: {
+        select: { comments: true },
       },
     },
   });

@@ -12,3 +12,10 @@ declare module "next-auth" {
     };
   }
 }
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    nickname?: string | null;
+    profileEmoji?: string | null;
+  }
+}

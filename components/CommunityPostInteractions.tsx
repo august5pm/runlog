@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   COMMUNITY_REACTION_PRESETS,
   type CommunityReactionKind,
+  emptyReactionCounts,
+  isCommunityReactionKind,
 } from "@/lib/community-reactions";
 import { formatDateLabel } from "@/lib/format";
 
@@ -19,25 +20,77 @@ export type CommunityFeedComment = {
 type Props = {
   postId: string;
   currentUserId: string | null;
-  initialComments: CommunityFeedComment[];
+  initialCommentCount: number;
   initialReactionCounts: Record<CommunityReactionKind, number>;
   initialMyReactionKind: CommunityReactionKind | null;
 };
 
 const COMMENT_MAX = 200;
 
+function mergeReactionCounts(
+  raw: Record<string, number> | undefined,
+): Record<CommunityReactionKind, number> {
+  const base = emptyReactionCounts();
+  if (!raw) return base;
+  for (const k of Object.keys(raw)) {
+    if (isCommunityReactionKind(k)) {
+      base[k] = Number(raw[k]) || 0;
+    }
+  }
+  return base;
+}
+
 export function CommunityPostInteractions({
   postId,
   currentUserId,
-  initialComments,
+  initialCommentCount,
   initialReactionCounts,
   initialMyReactionKind,
 }: Props) {
-  const router = useRouter();
+  const [comments, setComments] = useState<CommunityFeedComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentsError, setCommentsError] = useState(false);
+
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
   const [commentMsg, setCommentMsg] = useState<string | null>(null);
   const [reactionBusy, setReactionBusy] = useState(false);
+
+  const [reactionCounts, setReactionCounts] = useState(initialReactionCounts);
+  const [myReactionKind, setMyReactionKind] = useState(initialMyReactionKind);
+  const [commentCount, setCommentCount] = useState(initialCommentCount);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCommentsLoading(true);
+    setCommentsError(false);
+    (async () => {
+      try {
+        const res = await fetch(`/api/community/posts/${postId}/comments`);
+        if (!res.ok) {
+          if (!cancelled) setCommentsError(true);
+          return;
+        }
+        const data = (await res.json()) as {
+          comments?: CommunityFeedComment[];
+          total?: number;
+        };
+        if (cancelled) return;
+        const list = data.comments ?? [];
+        setComments(list);
+        setCommentCount(
+          typeof data.total === "number" ? data.total : list.length,
+        );
+      } catch {
+        if (!cancelled) setCommentsError(true);
+      } finally {
+        if (!cancelled) setCommentsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
 
   async function onReaction(kind: CommunityReactionKind) {
     if (!currentUserId || reactionBusy) return;
@@ -49,12 +102,22 @@ export function CommunityPostInteractions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind }),
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        reactionCounts?: Record<string, number>;
+        myReactionKind?: string | null;
+      };
       if (!res.ok) {
         setCommentMsg(json.error ?? "반응을 저장하지 못했습니다.");
         return;
       }
-      router.refresh();
+      if (json.reactionCounts) {
+        setReactionCounts(mergeReactionCounts(json.reactionCounts));
+      }
+      const mine = json.myReactionKind;
+      setMyReactionKind(
+        mine && isCommunityReactionKind(mine) ? mine : null,
+      );
     } finally {
       setReactionBusy(false);
     }
@@ -73,13 +136,19 @@ export function CommunityPostInteractions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: text }),
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        comment?: CommunityFeedComment;
+      };
       if (!res.ok) {
         setCommentMsg(json.error ?? "댓글을 등록하지 못했습니다.");
         return;
       }
       setCommentText("");
-      router.refresh();
+      if (json.comment) {
+        setComments((prev) => [...prev, json.comment!]);
+        setCommentCount((c) => c + 1);
+      }
     } finally {
       setCommentBusy(false);
     }
@@ -91,8 +160,8 @@ export function CommunityPostInteractions({
         <p className="mb-1.5 text-[11px] font-medium text-subtle">반응</p>
         <div className="flex flex-wrap gap-1.5">
           {COMMUNITY_REACTION_PRESETS.map((p) => {
-            const count = initialReactionCounts[p.kind] ?? 0;
-            const active = initialMyReactionKind === p.kind;
+            const count = reactionCounts[p.kind] ?? 0;
+            const active = myReactionKind === p.kind;
             return (
               <button
                 key={p.kind}
@@ -122,11 +191,15 @@ export function CommunityPostInteractions({
 
       <div>
         <p className="mb-1.5 text-[11px] font-medium text-subtle">
-          댓글 {initialComments.length > 0 ? `(${initialComments.length})` : ""}
+          댓글 {commentCount > 0 ? `(${commentCount})` : ""}
         </p>
-        {initialComments.length > 0 ? (
+        {commentsLoading ? (
+          <p className="mb-3 text-caption text-subtle">댓글 불러오는 중…</p>
+        ) : commentsError ? (
+          <p className="mb-3 text-caption text-red-600">댓글을 불러오지 못했습니다.</p>
+        ) : comments.length > 0 ? (
           <ul className="mb-3 max-h-48 space-y-2 overflow-y-auto rounded-lg border border-border bg-bg/60 px-2 py-2">
-            {initialComments.map((c) => (
+            {comments.map((c) => (
               <li key={c.id} className="flex gap-2 text-caption">
                 <span
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-muted text-base leading-none"

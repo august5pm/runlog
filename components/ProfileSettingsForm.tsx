@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PROFILE_EMOJI_PRESETS } from "@/lib/profile-emoji-presets";
@@ -31,6 +32,7 @@ export function ProfileSettingsForm({
   monthlyDistanceGoalKm: initialMonthGoal,
 }: Props) {
   const router = useRouter();
+  const { update } = useSession();
   const [nickname, setNickname] = useState(initialNickname ?? "");
   const [profileEmoji, setProfileEmoji] = useState(initialEmoji ?? "");
   const [weeklyGoal, setWeeklyGoal] = useState(() =>
@@ -104,6 +106,10 @@ export function ProfileSettingsForm({
         return;
       }
       setMessage({ type: "ok", text: "저장했습니다." });
+      await update({
+        nickname: nickname.trim() || null,
+        profileEmoji: profileEmoji.trim() || null,
+      });
       router.refresh();
     } finally {
       setSaving(false);

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { latLonToGrid } from "@/lib/kma-grid";
 import {
   type WeatherIconKind,
@@ -315,22 +316,17 @@ async function fetchKmaUntilOk(urls: string[]): Promise<KmaResult> {
   return { ok: false, message: lastMessage };
 }
 
-export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
-  const keyRaw = normalizeServiceKeyRaw(process.env.DATA_GO_KR_SERVICE_KEY ?? "");
-  const naverWeatherUrl = naverUrl();
-  const stationLabel = weatherStationLabel();
-
-  if (!keyRaw) {
-    return {
-      ok: false,
-      message: "공공데이터포털 서비스키가 설정되지 않았습니다.",
-      naverWeatherUrl,
-      stationLabel,
-    };
-  }
-
-  const { nx, ny } = resolveGrid();
-  const { baseDate, baseTime } = getUltraSrtNcstBaseDateTime();
+async function fetchWeatherSnapshotForSlot(input: {
+  keyRaw: string;
+  nx: number;
+  ny: number;
+  baseDate: string;
+  baseTime: string;
+  naverWeatherUrl: string;
+  stationLabel: string;
+}): Promise<WeatherSnapshot> {
+  const { keyRaw, nx, ny, baseDate, baseTime, naverWeatherUrl, stationLabel } =
+    input;
 
   const ncstParams = new URLSearchParams({
     pageNo: "1",
@@ -400,4 +396,45 @@ export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
     stationLabel,
     naverWeatherUrl,
   };
+}
+
+/** 격자·관측 시각 슬롯당 짧게 캐시해 대시보드 체감 속도 개선 */
+export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
+  const naverWeatherUrl = naverUrl();
+  const stationLabel = weatherStationLabel();
+  const keyRaw = normalizeServiceKeyRaw(process.env.DATA_GO_KR_SERVICE_KEY ?? "");
+
+  if (!keyRaw) {
+    return {
+      ok: false,
+      message: "공공데이터포털 서비스키가 설정되지 않았습니다.",
+      naverWeatherUrl,
+      stationLabel,
+    };
+  }
+
+  const { nx, ny } = resolveGrid();
+  const { baseDate, baseTime } = getUltraSrtNcstBaseDateTime();
+
+  return unstable_cache(
+    () =>
+      fetchWeatherSnapshotForSlot({
+        keyRaw,
+        nx,
+        ny,
+        baseDate,
+        baseTime,
+        naverWeatherUrl,
+        stationLabel,
+      }),
+    [
+      "kma-weather-v1",
+      String(nx),
+      String(ny),
+      baseDate,
+      baseTime,
+      keyRaw.slice(0, 16),
+    ],
+    { revalidate: 180 },
+  )();
 }
