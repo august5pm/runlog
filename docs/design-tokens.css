@@ -55,8 +55,8 @@
   /* 간격 (참고용, Tailwind spacing과 병행) */
   --space-section: 1.5rem;
   --space-card-padding: 1rem;
-  --radius-card: 0.75rem;
-  --radius-button: 0.75rem;
+  --radius-card: 0.5rem;
+  --radius-button: 0.5rem;
   --radius-input: 0.5rem;
 
   /* 그림자 */

@@ -26,7 +26,7 @@ export const ALL_BADGES = [
   },
   {
     id: "month_10",
-    emoji: "🏆",
+    emoji: "🏅",
     title: "이번 달 10회",
     description: "이번 달에 러닝을 10번 기록했어요.",
     hint: "이번 달 기록 10회 이상",
@@ -40,7 +40,7 @@ export const ALL_BADGES = [
   },
   {
     id: "streak_14",
-    emoji: "🏅",
+    emoji: "🏆",
     title: "연속 14일",
     description: "연속으로 14일간 기록했어요.",
     hint: "연속 기록 14일 이상",

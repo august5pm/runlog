@@ -165,8 +165,7 @@ export function ProfileSettingsForm({
           프로필 이모지
         </span>
         <p className="mb-2 text-caption text-subtle">
-          아래에서 고르거나 직접 입력할 수 있습니다. 비워 두면 기본{" "}
-          {DEFAULT_PROFILE_EMOJI} 입니다.
+          아래에서 고릅니다. 고르지 않으면 기본 {DEFAULT_PROFILE_EMOJI} 입니다.
         </p>
         <div
           className="mb-3 grid grid-cols-6 gap-1.5 sm:grid-cols-9"
@@ -193,19 +192,6 @@ export function ProfileSettingsForm({
             );
           })}
         </div>
-        <label htmlFor="profileEmoji" className="sr-only">
-          프로필 이모지 직접 입력
-        </label>
-        <input
-          id="profileEmoji"
-          name="profileEmoji"
-          type="text"
-          maxLength={32}
-          value={profileEmoji}
-          onChange={(e) => setProfileEmoji(e.target.value)}
-          placeholder={DEFAULT_PROFILE_EMOJI}
-          className="w-full rounded-input border border-border bg-bg px-3 py-2 text-body text-foreground shadow-inner outline-none ring-accent focus:ring-2"
-        />
       </div>
 
       <div className="rounded-lg border border-border bg-bg/50 p-3">

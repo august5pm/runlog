@@ -2,20 +2,26 @@ import type { WeatherSnapshot } from "@/lib/kma-weather";
 import { weatherIconKindLabel } from "@/lib/weather-icon-map";
 import { WeatherIcon } from "@/components/WeatherIcon";
 
-export function DashboardWeather({ data }: { data: WeatherSnapshot }) {
+export function DashboardWeather({
+  data,
+  className = "",
+}: {
+  data: WeatherSnapshot;
+  className?: string;
+}) {
   return (
     <a
       href={data.naverWeatherUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex flex-col rounded-lg border border-border bg-surface px-3 py-2.5 shadow-card transition hover:border-accent sm:items-end"
+      className={`flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface px-3 py-2.5 shadow-card transition hover:border-accent max-sm:items-stretch sm:items-end ${className}`}
     >
       {data.ok ? (
-        <div className="flex items-center gap-2.5">
+        <div className="flex w-full flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2.5">
           <WeatherIcon
             kind={data.iconKind}
             title={weatherIconKindLabel(data.iconKind)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center text-3xl leading-none select-none"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center text-2xl leading-none select-none sm:h-10 sm:w-10 sm:text-3xl"
           />
           <div className="min-w-0 text-left">
             <p className="font-numeric text-2xl font-bold tabular-nums leading-none text-foreground">
@@ -35,7 +41,7 @@ export function DashboardWeather({ data }: { data: WeatherSnapshot }) {
           {data.message}
         </p>
       )}
-      <span className="mt-1.5 text-[10px] font-medium text-accent">
+      <span className="mt-1.5 block w-full text-right text-[10px] font-medium text-accent">
         네이버 날씨 →
       </span>
     </a>

@@ -121,7 +121,7 @@ export function CommunityPostForm({
             id="comm-challenge"
             value={challengeId}
             onChange={(e) => setChallengeId(e.target.value)}
-            className="w-full rounded-input border border-border bg-bg px-3 py-2 text-caption text-foreground shadow-inner outline-none ring-accent focus:ring-2"
+            className="select-chevron-inset w-full rounded-input border border-border bg-bg text-caption text-foreground shadow-inner outline-none ring-accent focus:ring-2"
           >
             <option value="">자유 (챌린지 없음)</option>
             {challenges.map((c) => (
@@ -142,7 +142,7 @@ export function CommunityPostForm({
             id="comm-run"
             value={runId}
             onChange={(e) => setRunId(e.target.value)}
-            className="w-full rounded-input border border-border bg-bg px-3 py-2 text-caption text-foreground shadow-inner outline-none ring-accent focus:ring-2"
+            className="select-chevron-inset w-full rounded-input border border-border bg-bg text-caption text-foreground shadow-inner outline-none ring-accent focus:ring-2"
           >
             <option value="">첨부 안 함</option>
             {runs.map((r) => (
@@ -167,13 +167,15 @@ export function CommunityPostForm({
           {message.text}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={saving || content.trim().length === 0}
-        className="rounded-button bg-accent px-4 py-2 text-caption font-semibold text-white shadow-card hover:opacity-90 disabled:opacity-50"
-      >
-        {saving ? "등록 중…" : "등록"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={saving || content.trim().length === 0}
+          className="rounded-button bg-accent px-4 py-2 text-caption font-semibold text-white shadow-card hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? "등록 중…" : "등록"}
+        </button>
+      </div>
     </form>
   );
 }

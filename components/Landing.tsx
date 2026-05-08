@@ -38,7 +38,7 @@ export function Landing({
       <div className="mx-auto max-w-md text-center">
         <div className="mb-6 flex flex-col items-center gap-3">
           <span aria-hidden className="flex">
-            <RunLogLogo size={56} priority className="rounded-xl" />
+            <RunLogLogo size={56} priority className="rounded-lg" />
           </span>
           <p className="text-caption font-semibold uppercase tracking-wide text-accent">
             RunLog

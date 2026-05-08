@@ -5,7 +5,12 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrisma(): PrismaClient {
-  return new PrismaClient();
+  return new PrismaClient({
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["error", "warn"]
+        : ["error"],
+  });
 }
 
 /** 옛 싱글톤(스키마 추가 전)은 .challenge 등이 없음 */
@@ -17,24 +22,22 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   );
 }
 
-let devCached: PrismaClient | undefined;
-
+/**
+ * dev·prod 모두 `globalThis` 싱글톤 — Next.js dev(HMR·라우트 컴파일)에서 모듈이 여러 번 평가돼도
+ * PrismaClient가 중복 생성·연결을 잡아먹지 않도록 함 (원격 DB max connections 초과 방지).
+ */
 function getPrismaClient(): PrismaClient {
-  if (process.env.NODE_ENV === "production") {
-    if (!globalForPrisma.prisma) {
-      globalForPrisma.prisma = createPrisma();
-    }
-    return globalForPrisma.prisma;
+  if (isStalePrismaClient(globalForPrisma.prisma)) {
+    const stale = globalForPrisma.prisma;
+    globalForPrisma.prisma = undefined;
+    void stale?.$disconnect().catch(() => {});
   }
 
-  if (isStalePrismaClient(devCached)) {
-    void devCached?.$disconnect().catch(() => {});
-    devCached = undefined;
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrisma();
   }
-  if (!devCached) {
-    devCached = createPrisma();
-  }
-  return devCached;
+
+  return globalForPrisma.prisma;
 }
 
 /**

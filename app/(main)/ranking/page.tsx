@@ -88,7 +88,7 @@ export default async function RankingPage({
               key={r}
               href={rankingHref({ range: r })}
               scroll={false}
-              className={`rounded-md px-2.5 py-2 text-center text-caption font-semibold transition sm:min-w-[3.25rem] sm:px-3 ${
+              className={`rounded-lg px-2.5 py-2 text-center text-caption font-semibold transition sm:min-w-[3.25rem] sm:px-3 ${
                 period === r
                   ? "bg-accent text-accent-foreground"
                   : "text-muted hover:bg-surface hover:text-foreground"
@@ -102,7 +102,7 @@ export default async function RankingPage({
           <Link
             href={rankingHref({ metric: "distance" })}
             scroll={false}
-            className={`rounded-md px-3 py-2 text-caption font-semibold transition ${
+            className={`rounded-lg px-3 py-2 text-caption font-semibold transition ${
               metric === "distance"
                 ? "bg-accent text-accent-foreground"
                 : "text-muted hover:bg-surface hover:text-foreground"
@@ -113,7 +113,7 @@ export default async function RankingPage({
           <Link
             href={rankingHref({ metric: "runs" })}
             scroll={false}
-            className={`rounded-md px-3 py-2 text-caption font-semibold transition ${
+            className={`rounded-lg px-3 py-2 text-caption font-semibold transition ${
               metric === "runs"
                 ? "bg-accent text-accent-foreground"
                 : "text-muted hover:bg-surface hover:text-foreground"

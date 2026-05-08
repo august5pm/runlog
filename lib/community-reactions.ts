@@ -1,6 +1,7 @@
 /** 서버·클라이언트 공통: 반응 프리셋 (DB kind 값) */
 export const COMMUNITY_REACTION_PRESETS = [
   { kind: "clap", emoji: "👏", label: "박수" },
+  { kind: "thumbs_up", emoji: "👍", label: "좋아요" },
   { kind: "fire", emoji: "🔥", label: "불" },
   { kind: "heart", emoji: "❤️", label: "하트" },
   { kind: "flex", emoji: "💪", label: "힘" },

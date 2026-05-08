@@ -15,8 +15,10 @@ import {
   formatHeartCadenceLine,
   formatPaceMinPerKm,
 } from "@/lib/format";
-import { DashboardWeather } from "@/components/DashboardWeather";
-import { getWeatherSnapshot } from "@/lib/kma-weather";
+import {
+  DashboardWeatherHeaderSuspended,
+  DashboardWeatherMobileSuspended,
+} from "@/components/DashboardWeatherSuspended";
 import { prisma } from "@/lib/prisma";
 import { parseRunPeriod, runDateFilterForPeriod } from "@/lib/run-period";
 import { getRunningStreakDays } from "@/lib/run-streak";
@@ -53,7 +55,6 @@ export default async function DashboardPage({
     periodRuns,
     recentRuns,
     periodTotals,
-    weather,
     goalsUser,
     streakDays,
     weekGoalAgg,
@@ -73,7 +74,6 @@ export default async function DashboardPage({
       _sum: { distanceKm: true, durationSec: true },
       _count: true,
     }),
-    getWeatherSnapshot(),
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -180,12 +180,10 @@ export default async function DashboardPage({
             {session?.user ? resolveDisplayName(session.user) : "러너"}님
           </p>
         </div>
-        <div className="shrink-0 sm:max-w-[min(100%,16rem)] sm:pt-0.5">
-          <DashboardWeather data={weather} />
-        </div>
+        <DashboardWeatherHeaderSuspended />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">연속 기록</p>
           <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
@@ -196,7 +194,8 @@ export default async function DashboardPage({
             오늘 또는 어제에 기록이 있어야 이어집니다.
           </p>
         </div>
-        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
+        <DashboardWeatherMobileSuspended />
+        <div className="col-span-2 rounded-card border border-border bg-surface p-4 shadow-card sm:col-span-1">
           <p className="text-caption font-medium text-muted">이번 주 목표</p>
           {weekGoalKm != null && weekGoalKm > 0 ? (
             <>
@@ -235,7 +234,7 @@ export default async function DashboardPage({
             </>
           )}
         </div>
-        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
+        <div className="col-span-2 rounded-card border border-border bg-surface p-4 shadow-card sm:col-span-1">
           <p className="text-caption font-medium text-muted">이번 달 목표</p>
           {monthGoalKm != null && monthGoalKm > 0 ? (
             <>
@@ -339,7 +338,7 @@ export default async function DashboardPage({
                 key={value}
                 href={href}
                 scroll={false}
-                className={`rounded-md px-2.5 py-2 text-center text-caption font-semibold transition sm:min-w-[3.25rem] sm:px-3 ${
+                className={`rounded-lg px-2.5 py-2 text-center text-caption font-semibold transition sm:min-w-[3.25rem] sm:px-3 ${
                   range === value
                     ? "bg-accent text-accent-foreground"
                     : "text-muted hover:bg-surface hover:text-foreground"
@@ -413,7 +412,7 @@ export default async function DashboardPage({
             })}
           </ul>
         )}
-        <div className="mt-4 hidden md:block">
+        <div className="mt-4 hidden md:flex md:justify-end">
           <Link
             href="/runs"
             className="text-caption font-semibold text-accent hover:underline"

@@ -25,7 +25,7 @@ export default async function SettingsPage() {
       : null;
 
   return (
-    <div className="mx-auto max-w-md space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-8">
       <h1 className="text-h1 font-bold text-foreground">설정</h1>
 
       <div className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 shadow-card">

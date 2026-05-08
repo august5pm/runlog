@@ -237,17 +237,17 @@ export function CommunityPostInteractions({
               placeholder="댓글을 입력…"
               className="w-full resize-y rounded-input border border-border bg-bg px-2.5 py-1.5 text-caption text-foreground shadow-inner outline-none ring-accent focus:ring-2"
             />
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="text-[11px] text-subtle tabular-nums">
+                {commentText.trim().length}/{COMMENT_MAX}
+              </span>
               <button
                 type="submit"
                 disabled={commentBusy || commentText.trim().length === 0}
-                className="rounded-button bg-accent px-3 py-1.5 text-caption font-semibold text-white shadow-card hover:opacity-90 disabled:opacity-50"
+                className="shrink-0 rounded-button bg-accent px-4 py-2 text-caption font-semibold text-white shadow-card hover:opacity-90 disabled:opacity-50"
               >
                 {commentBusy ? "등록 중…" : "댓글 등록"}
               </button>
-              <span className="text-[11px] text-subtle">
-                {commentText.trim().length}/{COMMENT_MAX}
-              </span>
             </div>
           </form>
         ) : (
