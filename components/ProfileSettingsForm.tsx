@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PROFILE_EMOJI_PRESETS } from "@/lib/profile-emoji-presets";
 import {
+  NICKNAME_MAX_CHARS,
+  nicknameCharLength,
+  truncateNicknameInput,
+} from "@/lib/profile-nickname";
+import {
   DEFAULT_PROFILE_EMOJI,
   resolveDisplayName,
   resolveProfileEmoji,
@@ -33,7 +38,9 @@ export function ProfileSettingsForm({
 }: Props) {
   const router = useRouter();
   const { update } = useSession();
-  const [nickname, setNickname] = useState(initialNickname ?? "");
+  const [nickname, setNickname] = useState(() =>
+    truncateNicknameInput(initialNickname ?? ""),
+  );
   const [profileEmoji, setProfileEmoji] = useState(initialEmoji ?? "");
   const [weeklyGoal, setWeeklyGoal] = useState(() =>
     goalInputInitial(initialWeekGoal),
@@ -88,11 +95,21 @@ export function ProfileSettingsForm({
         monthlyDistanceGoalKm = m === 0 ? null : Math.round(m * 100) / 100;
       }
 
+      const nickTrim = nickname.trim();
+      if (nicknameCharLength(nickTrim) > NICKNAME_MAX_CHARS) {
+        setMessage({
+          type: "err",
+          text: `닉네임은 ${NICKNAME_MAX_CHARS}자 이내로 입력해 주세요.`,
+        });
+        setSaving(false);
+        return;
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nickname: nickname.trim(),
+          nickname: nickTrim,
           profileEmoji: profileEmoji.trim(),
           weeklyDistanceGoalKm:
             wTrim === "" ? null : weeklyDistanceGoalKm,
@@ -107,7 +124,7 @@ export function ProfileSettingsForm({
       }
       setMessage({ type: "ok", text: "저장했습니다." });
       await update({
-        nickname: nickname.trim() || null,
+        nickname: nickTrim || null,
         profileEmoji: profileEmoji.trim() || null,
       });
       router.refresh();
@@ -145,9 +162,11 @@ export function ProfileSettingsForm({
           name="nickname"
           type="text"
           autoComplete="nickname"
-          maxLength={40}
+          maxLength={NICKNAME_MAX_CHARS}
           value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
+          onChange={(e) =>
+            setNickname(truncateNicknameInput(e.target.value))
+          }
           placeholder={resolveDisplayName({
             nickname: null,
             name: fallbackName,
@@ -156,7 +175,7 @@ export function ProfileSettingsForm({
           className="w-full rounded-input border border-border bg-bg px-3 py-2 text-body text-foreground shadow-inner outline-none ring-accent focus:ring-2"
         />
         <p className="mt-1 text-caption text-subtle">
-          비워 두면 Google 이름 → 이메일 앞부분 순으로 표시됩니다.
+          최대 {NICKNAME_MAX_CHARS}자 · 비워 두면 Google 이름 → 이메일 앞부분 순으로 표시됩니다.
         </p>
       </div>
 

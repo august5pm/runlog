@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const NICKNAME_MAX = 40;
+import {
+  NICKNAME_MAX_CHARS,
+  nicknameCharLength,
+} from "@/lib/profile-nickname";
 const EMOJI_MAX = 32;
 const GOAL_KM_MAX = 999.99;
 
@@ -66,7 +68,15 @@ export async function PATCH(req: Request) {
     if (v !== null && typeof v !== "string") {
       return NextResponse.json({ error: "닉네임 형식이 올바르지 않습니다." }, { status: 400 });
     }
-    const trimmed = typeof v === "string" ? v.trim().slice(0, NICKNAME_MAX) : "";
+    const trimmed = typeof v === "string" ? v.trim() : "";
+    if (nicknameCharLength(trimmed) > NICKNAME_MAX_CHARS) {
+      return NextResponse.json(
+        {
+          error: `닉네임은 ${NICKNAME_MAX_CHARS}자 이내로 입력해 주세요.`,
+        },
+        { status: 400 },
+      );
+    }
     data.nickname = trimmed.length > 0 ? trimmed : null;
   }
 
