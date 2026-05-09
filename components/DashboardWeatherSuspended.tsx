@@ -11,8 +11,8 @@ export function DashboardWeatherSkeleton({ className }: { className?: string }) 
       className={`animate-pulse rounded-lg border border-border bg-surface px-3 py-2.5 shadow-card ${className ?? ""}`}
       aria-hidden
     >
-      <div className="flex gap-2">
-        <div className="h-9 w-9 shrink-0 rounded-full bg-border sm:h-10 sm:w-10" />
+      <div className="flex flex-row items-center gap-2.5">
+        <div className="h-11 w-11 shrink-0 rounded-full bg-border sm:h-10 sm:w-10" />
         <div className="min-w-0 flex-1 space-y-2 pt-0.5">
           <div className="h-6 w-16 rounded bg-border" />
           <div className="h-3 w-28 rounded bg-border" />
@@ -34,8 +34,10 @@ async function DashboardWeatherHeaderInner() {
 async function DashboardWeatherMobileInner() {
   const data = await getWeatherSnapshotCached();
   return (
-    <div className="min-w-0 sm:hidden">
-      <DashboardWeather data={data} />
+    <div className="flex min-w-0 shrink-0 justify-end sm:hidden">
+      <div className="w-full max-w-[min(100%,16rem)] pt-0.5">
+        <DashboardWeather data={data} />
+      </div>
     </div>
   );
 }
@@ -55,7 +57,13 @@ export function DashboardWeatherHeaderSuspended() {
 export function DashboardWeatherMobileSuspended() {
   return (
     <Suspense
-      fallback={<DashboardWeatherSkeleton className="min-w-0 sm:hidden" />}
+      fallback={
+        <div className="flex min-w-0 shrink-0 justify-end sm:hidden">
+          <div className="w-full max-w-[min(100%,16rem)] pt-0.5">
+            <DashboardWeatherSkeleton />
+          </div>
+        </div>
+      }
     >
       <DashboardWeatherMobileInner />
     </Suspense>
