@@ -79,13 +79,8 @@ function AccountMenu({ session }: { session: Session }) {
         >
           {userAvatarEmoji(session)}
         </span>
-        <span className="min-w-0">
-          <span className="block text-[10px] font-medium uppercase tracking-wide text-subtle">
-            로그인
-          </span>
-          <span className="block truncate text-caption font-medium text-foreground">
-            {userLabel(session)}
-          </span>
+        <span className="min-w-0 truncate text-caption font-medium text-foreground">
+          {userLabel(session)}
         </span>
       </button>
       {open ? (
