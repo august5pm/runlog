@@ -19,6 +19,7 @@ import { DashboardWeatherHeaderSuspended } from "@/components/DashboardWeatherSu
 import { prisma } from "@/lib/prisma";
 import { parseRunPeriod, runDateFilterForPeriod } from "@/lib/run-period";
 import { getRunningStreakDays } from "@/lib/run-streak";
+import { dashboardGreeting } from "@/lib/dashboard-greeting";
 import { resolveDisplayName } from "@/lib/user-display";
 import { monthRange, weekRange, yearRange } from "@/lib/week";
 
@@ -173,8 +174,12 @@ export default async function DashboardPage({
         <div className="min-w-0 flex-1">
           <h1 className="text-h1 font-bold text-foreground">대시보드</h1>
           <p className="mt-1 text-muted">
-            안녕하세요,{" "}
-            {session?.user ? resolveDisplayName(session.user) : "러너"}님
+            {dashboardGreeting(
+              session?.user
+                ? resolveDisplayName(session.user)
+                : "러너",
+              anchor,
+            )}
           </p>
         </div>
         <DashboardWeatherHeaderSuspended />
