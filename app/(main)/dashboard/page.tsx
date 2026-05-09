@@ -15,7 +15,7 @@ import {
   formatHeartCadenceLine,
   formatPaceMinPerKm,
 } from "@/lib/format";
-import { DashboardWeatherHeaderSuspended } from "@/components/DashboardWeatherSuspended";
+import { DashboardWeatherLocation } from "@/components/DashboardWeatherLocation";
 import { prisma } from "@/lib/prisma";
 import { parseRunPeriod, runDateFilterForPeriod } from "@/lib/run-period";
 import { getRunningStreakDays } from "@/lib/run-streak";
@@ -182,7 +182,7 @@ export default async function DashboardPage({
             )}
           </p>
         </div>
-        <DashboardWeatherHeaderSuspended />
+        <DashboardWeatherLocation />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

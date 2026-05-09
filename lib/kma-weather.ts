@@ -112,6 +112,59 @@ function resolveGrid(): { nx: number; ny: number } {
   return latLonToGrid(lat, lon);
 }
 
+/** 단기예보 격자가 한반도에 의미 있을 때만 GPS 좌표 사용 (그 외는 `resolveGrid()`로 폴백) */
+export function isLikelyKoreaRegion(lat: number, lon: number): boolean {
+  return (
+    lat >= 32.9 &&
+    lat <= 38.85 &&
+    lon >= 124.35 &&
+    lon <= 132.35
+  );
+}
+
+async function getWeatherSnapshotWithGrid(
+  nx: number,
+  ny: number,
+  stationLabel: string,
+): Promise<WeatherSnapshot> {
+  const naverWeatherUrl = naverUrl();
+  const keyRaw = normalizeServiceKeyRaw(process.env.DATA_GO_KR_SERVICE_KEY ?? "");
+
+  if (!keyRaw) {
+    return {
+      ok: false,
+      message: "공공데이터포털 서비스키가 설정되지 않았습니다.",
+      naverWeatherUrl,
+      stationLabel,
+    };
+  }
+
+  const { baseDate, baseTime } = getUltraSrtNcstBaseDateTime();
+
+  return unstable_cache(
+    () =>
+      fetchWeatherSnapshotForSlot({
+        keyRaw,
+        nx,
+        ny,
+        baseDate,
+        baseTime,
+        naverWeatherUrl,
+        stationLabel,
+      }),
+    [
+      "kma-weather-v1",
+      String(nx),
+      String(ny),
+      baseDate,
+      baseTime,
+      keyRaw.slice(0, 16),
+      stationLabel,
+    ],
+    { revalidate: 180 },
+  )();
+}
+
 function naverUrl(): string {
   const u = process.env.NAVER_WEATHER_URL?.trim();
   return u && u.startsWith("http") ? u : "https://weather.naver.com/";
@@ -400,41 +453,20 @@ async function fetchWeatherSnapshotForSlot(input: {
 
 /** 격자·관측 시각 슬롯당 짧게 캐시해 대시보드 체감 속도 개선 */
 export async function getWeatherSnapshot(): Promise<WeatherSnapshot> {
-  const naverWeatherUrl = naverUrl();
-  const stationLabel = weatherStationLabel();
-  const keyRaw = normalizeServiceKeyRaw(process.env.DATA_GO_KR_SERVICE_KEY ?? "");
-
-  if (!keyRaw) {
-    return {
-      ok: false,
-      message: "공공데이터포털 서비스키가 설정되지 않았습니다.",
-      naverWeatherUrl,
-      stationLabel,
-    };
-  }
-
   const { nx, ny } = resolveGrid();
-  const { baseDate, baseTime } = getUltraSrtNcstBaseDateTime();
+  return getWeatherSnapshotWithGrid(nx, ny, weatherStationLabel());
+}
 
-  return unstable_cache(
-    () =>
-      fetchWeatherSnapshotForSlot({
-        keyRaw,
-        nx,
-        ny,
-        baseDate,
-        baseTime,
-        naverWeatherUrl,
-        stationLabel,
-      }),
-    [
-      "kma-weather-v1",
-      String(nx),
-      String(ny),
-      baseDate,
-      baseTime,
-      keyRaw.slice(0, 16),
-    ],
-    { revalidate: 180 },
-  )();
+/** 브라우저 등에서 넘긴 위·경도 → 격자 (한반도 밖 좌표는 env 기본 격자로 폴백) */
+export async function getWeatherSnapshotAt(
+  lat: number,
+  lon: number,
+): Promise<WeatherSnapshot> {
+  const useGps =
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    isLikelyKoreaRegion(lat, lon);
+  const { nx, ny } = useGps ? latLonToGrid(lat, lon) : resolveGrid();
+  const stationLabel = useGps ? "현재 위치" : weatherStationLabel();
+  return getWeatherSnapshotWithGrid(nx, ny, stationLabel);
 }
