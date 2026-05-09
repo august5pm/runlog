@@ -15,10 +15,7 @@ import {
   formatHeartCadenceLine,
   formatPaceMinPerKm,
 } from "@/lib/format";
-import {
-  DashboardWeatherHeaderSuspended,
-  DashboardWeatherMobileSuspended,
-} from "@/components/DashboardWeatherSuspended";
+import { DashboardWeatherHeaderSuspended } from "@/components/DashboardWeatherSuspended";
 import { prisma } from "@/lib/prisma";
 import { parseRunPeriod, runDateFilterForPeriod } from "@/lib/run-period";
 import { getRunningStreakDays } from "@/lib/run-streak";
@@ -172,8 +169,8 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
+      <div className="flex flex-row items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-h1 font-bold text-foreground">대시보드</h1>
           <p className="mt-1 text-muted">
             안녕하세요,{" "}
@@ -183,7 +180,7 @@ export default async function DashboardPage({
         <DashboardWeatherHeaderSuspended />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">연속 기록</p>
           <p className="mt-1 font-numeric text-2xl font-bold text-foreground">
@@ -194,8 +191,7 @@ export default async function DashboardPage({
             오늘 또는 어제에 기록이 있어야 이어집니다.
           </p>
         </div>
-        <DashboardWeatherMobileSuspended />
-        <div className="col-span-2 rounded-card border border-border bg-surface p-4 shadow-card sm:col-span-1">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">이번 주 목표</p>
           {weekGoalKm != null && weekGoalKm > 0 ? (
             <>
@@ -234,7 +230,7 @@ export default async function DashboardPage({
             </>
           )}
         </div>
-        <div className="col-span-2 rounded-card border border-border bg-surface p-4 shadow-card sm:col-span-1">
+        <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">이번 달 목표</p>
           {monthGoalKm != null && monthGoalKm > 0 ? (
             <>
@@ -275,7 +271,7 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-card border border-border bg-surface p-4 shadow-card">
           <p className="text-caption font-medium text-muted">
             {summaryLabel} 횟수
